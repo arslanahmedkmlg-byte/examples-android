@@ -1,0 +1,81 @@
+name: Android ARM64 APK
+
+on:
+  push:
+    branches: [master, "ci-arm64-apk*"]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Android example
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build packages
+        run: sdkmanager --install "platforms;android-22" "build-tools;28.0.3" "cmake;3.22.1" "ndk;21.4.7075529"
+
+      - name: Check out projectM native source
+        uses: actions/checkout@v4
+        with:
+          repository: projectM-visualizer/projectm
+          ref: 521eff97a5b9603ef9db58fcef4e8f1c87fae2b6
+          path: projectm-src
+
+      - name: Build projectM for arm64-v8a
+        run: |
+          cmake -S projectm-src -B projectm-build \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_HOME/ndk/21.4.7075529/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/.github/cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-22 \
+            -DANDROID_STL=c++_shared \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_GLES=ON \
+            -DENABLE_SDL=OFF \
+            -DENABLE_THREADING=OFF \
+            -DENABLE_TESTING=OFF \
+            -DENABLE_PRESETS=OFF \
+            -DENABLE_NATIVE_PRESETS=OFF \
+            -DENABLE_LLVM=OFF
+          cmake --build projectm-build --target projectM_shared --parallel 2
+          mkdir -p app/jniLibs/arm64-v8a
+          cp -L projectm-build/src/libprojectM/libprojectM.so.3.1.1 app/jniLibs/arm64-v8a/libprojectM.so
+          cp projectm-src/src/libprojectM/{Common.hpp,PCM.hpp,dlldefs.h,event.h,fatal.h,projectM.hpp} \
+            app/jniLibs/include/libprojectM/
+
+      - name: Build unsigned release APK
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Verify APK ABI and libraries
+        run: |
+          apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -f "$apk"
+          unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libprojectM.so'
+          unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libjniwrapper.so'
+          if unzip -l "$apk" | grep -E 'lib/(armeabi-v7a|x86|x86_64)/'; then
+            echo "Unexpected non-arm64 native library in APK" >&2
+            exit 1
+          fi
+
+      - name: Upload unsigned APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples-android-arm64-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 14

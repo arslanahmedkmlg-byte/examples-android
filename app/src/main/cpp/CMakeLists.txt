@@ -39,7 +39,7 @@ add_library(
 set_target_properties(
         projectM
         PROPERTIES IMPORTED_LOCATION
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../jniLibs/armeabi-v7a/libprojectM.so)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../jniLibs/${ANDROID_ABI}/libprojectM.so)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../jniLibs/include/ )
 
