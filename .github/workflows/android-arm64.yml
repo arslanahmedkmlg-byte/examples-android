@@ -36,7 +36,7 @@ jobs:
           set -o pipefail
 
       - name: Install Android build packages
-        run: sdkmanager --install "platforms;android-22" "build-tools;28.0.3" "ndk;21.4.7075529"
+        run: sdkmanager --install "platforms;android-28" "build-tools;28.0.3" "ndk;21.4.7075529"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -97,6 +97,7 @@ jobs:
           apk=app/build/outputs/apk/debug/app-debug.apk
           test -f "$apk"
           "$ANDROID_HOME/build-tools/28.0.3/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/28.0.3/aapt" dump badging "$apk" | grep -Fq "targetSdkVersion:'28'"
           unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libprojectM.so'
           unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libjniwrapper.so'
           unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libc++_shared.so'
