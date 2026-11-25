@@ -89,24 +89,26 @@ jobs:
           cp "$ANDROID_HOME/ndk/21.4.7075529/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" \
             app/jniLibs/arm64-v8a/libc++_shared.so
 
-      - name: Build unsigned release APK
-        run: ./gradlew --no-daemon assembleRelease -x lintVitalRelease
+      - name: Build installable debug APK
+        run: ./gradlew --no-daemon assembleDebug
 
-      - name: Verify APK ABI and libraries
+      - name: Verify APK signature, ABI, and libraries
         run: |
-          apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          apk=app/build/outputs/apk/debug/app-debug.apk
           test -f "$apk"
+          "$ANDROID_HOME/build-tools/28.0.3/apksigner" verify --verbose "$apk"
           unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libprojectM.so'
           unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libjniwrapper.so'
+          unzip -l "$apk" | grep -Fq 'lib/arm64-v8a/libc++_shared.so'
           if unzip -l "$apk" | grep -E 'lib/(armeabi-v7a|x86|x86_64)/'; then
             echo "Unexpected non-arm64 native library in APK" >&2
             exit 1
           fi
 
-      - name: Upload unsigned APK
+      - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: examples-android-arm64-unsigned
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          name: examples-android-arm64-debug-signed
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
