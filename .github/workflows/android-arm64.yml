@@ -77,7 +77,9 @@ jobs:
             app/jniLibs/include/libprojectM/
 
       - name: Build unsigned release APK
-        run: ./gradlew --no-daemon assembleRelease
+        run: |
+          printf 'sdk.dir=%s\nndk.dir=%s\n' "$ANDROID_HOME" "$ANDROID_HOME/ndk/21.4.7075529" > local.properties
+          ./gradlew --no-daemon assembleRelease
 
       - name: Verify APK ABI and libraries
         run: |
