@@ -17,8 +17,22 @@ jobs:
       - name: Check out Android example
         uses: actions/checkout@v4
 
+      - name: Set up Java for Android SDK tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Accept Android SDK licenses
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses
+          set -o pipefail
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: false
 
       - name: Install Android build packages
         run: sdkmanager --install "platforms;android-22" "build-tools;28.0.3" "cmake;3.22.1" "ndk;21.4.7075529"
