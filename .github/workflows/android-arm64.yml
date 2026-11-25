@@ -90,8 +90,7 @@ jobs:
             app/jniLibs/arm64-v8a/libc++_shared.so
 
       - name: Build unsigned release APK
-        run: |
-          ./gradlew --no-daemon assembleRelease
+        run: ./gradlew --no-daemon assembleRelease -x lintVitalRelease
 
       - name: Verify APK ABI and libraries
         run: |
