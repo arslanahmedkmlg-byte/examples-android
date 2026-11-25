@@ -2,58 +2,61 @@ package com.github.projectm_android;
 
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.os.SystemClock;
 import android.util.Log;
 
 import static android.media.AudioFormat.CHANNEL_IN_MONO;
 import static android.media.AudioFormat.ENCODING_PCM_16BIT;
 
 public class AudioThread extends Thread {
-    private volatile static boolean keep_recording = true;
-    private volatile static boolean currently_recording = false;
+    private volatile boolean keepRecording = true;
 
     @Override
     public void run() {
-        int SAMPLE_RATE = 11025;
-        int bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE,
+        final int sampleRate = 11025;
+        int bufferSize = AudioRecord.getMinBufferSize(sampleRate,
                 CHANNEL_IN_MONO,
                 ENCODING_PCM_16BIT);
+        if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
+            Log.e("AudioThread", "AudioRecord returned invalid buffer size: " + bufferSize);
+            return;
+        }
         AudioRecord record = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
-                SAMPLE_RATE,
+                sampleRate,
                 CHANNEL_IN_MONO,
                 ENCODING_PCM_16BIT,
                 bufferSize);
-        if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
-            bufferSize = SAMPLE_RATE * 2;
+        if (record.getState() != AudioRecord.STATE_INITIALIZED) {
+            Log.e("AudioThread", "Unable to initialize audio recording");
+            record.release();
+            return;
         }
-        short[] audioBuffer = new short[bufferSize];
 
-        Log.d("AudioThread",String.format("bufferSize: %d", bufferSize));
+        short[] audioBuffer = new short[Math.max(1, bufferSize / 2)];
+        Log.d("AudioThread", "bufferSize: " + bufferSize);
 
-        while (currently_recording) {
-            Log.d("AudioThread","currently recoring, waiting 50ms before attempting again");
-            // bufferSize is usually worth 80ms of aurdio
-            // So waiting 50ms - this means, next attempt to grab AudioRecord will succeed.
-            SystemClock.sleep(50);
+        try {
+            record.startRecording();
+            while (keepRecording) {
+                int samplesRead = record.read(audioBuffer, 0, audioBuffer.length);
+                if (samplesRead > 0) {
+                    libprojectMJNIWrapper.addPCM(audioBuffer, (short) samplesRead);
+                } else if (samplesRead < 0) {
+                    Log.e("AudioThread", "AudioRecord read failed: " + samplesRead);
+                    break;
+                }
+            }
+        } catch (SecurityException e) {
+            Log.e("AudioThread", "Audio recording permission is unavailable", e);
+        } finally {
+            if (record.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+                record.stop();
+            }
+            record.release();
         }
-        record.startRecording();
-        currently_recording = true;
-
-        while (keep_recording) {
-            record.read(audioBuffer, 0, audioBuffer.length);
-            libprojectMJNIWrapper.addPCM(audioBuffer, (short) bufferSize);
-//            short max = 0;
-//            for (int ix=0;ix<audioBuffer.length; ix++) {
-//                max = (short) Math.max(audioBuffer[ix], max);
-//            }
-//            Log.i("MAX:", String.valueOf(max));
-        }
-        record.stop();
-        currently_recording = false;
     }
 
-    public void stop_recording() {
-        keep_recording = false;
+    public void stopRecording() {
+        keepRecording = false;
     }
 
 }

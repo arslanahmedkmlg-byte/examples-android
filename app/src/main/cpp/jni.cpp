@@ -24,8 +24,9 @@ void next_preset(bool hard_cut) {
     int preset_list_size = instance->getPlaylistSize();
     if (preset_list_size <= 0) {
         ALOGE("Could not load any presets");
+        return;
     }
-    int preset_number = (int)(rand() % (preset_list_size-1));
+    int preset_number = (int)(rand() % preset_list_size);
     ALOGD("Switching to preset %d", preset_number);
     instance->selectPreset(preset_number, hard_cut);
 }
