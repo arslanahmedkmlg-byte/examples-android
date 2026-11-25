@@ -72,7 +72,7 @@ jobs:
             -DENABLE_LLVM=OFF
           cmake --build projectm-build --target projectM_shared --parallel 2
           mkdir -p app/jniLibs/arm64-v8a
-          cp -L projectm-build/src/libprojectM/libprojectM.so.3.1.1 app/jniLibs/arm64-v8a/libprojectM.so
+          cp projectm-build/src/libprojectM/libprojectM.so app/jniLibs/arm64-v8a/libprojectM.so
           cp projectm-src/src/libprojectM/{Common.hpp,PCM.hpp,dlldefs.h,event.h,fatal.h,projectM.hpp} \
             app/jniLibs/include/libprojectM/
 
