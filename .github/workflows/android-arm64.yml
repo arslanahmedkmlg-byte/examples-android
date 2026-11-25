@@ -51,6 +51,9 @@ jobs:
           ref: 521eff97a5b9603ef9db58fcef4e8f1c87fae2b6
           path: projectm-src
 
+      - name: Disable desktop-only projectM targets
+        run: git -C projectm-src apply "$GITHUB_WORKSPACE/.github/patches/projectm-android.patch"
+
       - name: Build projectM for arm64-v8a
         run: |
           cmake -S projectm-src -B projectm-build \

@@ -1,0 +1,22 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -42,5 +42,5 @@
+ option(ENABLE_TESTING "Build and install the projectM test suite" OFF)
+ option(ENABLE_EMSCRIPTEN "Build for web with emscripten" OFF)
+-cmake_dependent_option(ENABLE_SDL "Enable SDL2 support" ON "NOT ENABLE_EMSCRIPTEN;ENABLE_TESTING" ON)
++cmake_dependent_option(ENABLE_SDL "Enable SDL2 support" ON "NOT ENABLE_EMSCRIPTEN;ENABLE_TESTING" OFF)
+ cmake_dependent_option(ENABLE_GLES "Enable OpenGL ES support" OFF "NOT ENABLE_EMSCRIPTEN" ON)
+ cmake_dependent_option(ENABLE_THREADING "Enable multithreading support" ON "NOT ENABLE_EMSCRIPTEN;NOT CMAKE_SYSTEM_NAME STREQUAL Windows" OFF)
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -4,5 +4,7 @@
+ add_subdirectory(projectM-jack)
+ add_subdirectory(projectM-libvisual)
+ add_subdirectory(projectM-pulseaudio)
+-add_subdirectory(projectM-sdl)
++if(ENABLE_SDL)
++    add_subdirectory(projectM-sdl)
++endif()
+ add_subdirectory(projectM-test)
