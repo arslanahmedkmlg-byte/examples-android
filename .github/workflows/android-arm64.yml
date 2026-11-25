@@ -52,7 +52,9 @@ jobs:
           path: projectm-src
 
       - name: Disable desktop-only projectM targets
-        run: git -C projectm-src apply "$GITHUB_WORKSPACE/.github/patches/projectm-android.patch"
+        run: |
+          git -C projectm-src apply "$GITHUB_WORKSPACE/.github/patches/projectm-android.patch"
+          sed -i '/^[[:space:]]*-fopenmp[[:space:]]*$/d' projectm-src/features.cmake
 
       - name: Build projectM for arm64-v8a
         run: |
@@ -75,6 +77,10 @@ jobs:
           cp projectm-build/src/libprojectM/libprojectM.so app/jniLibs/arm64-v8a/libprojectM.so
           cp projectm-src/src/libprojectM/{Common.hpp,PCM.hpp,dlldefs.h,event.h,fatal.h,projectM.hpp} \
             app/jniLibs/include/libprojectM/
+          if readelf -d app/jniLibs/arm64-v8a/libprojectM.so | grep -Fq 'libomp.so'; then
+            echo "projectM unexpectedly depends on libomp.so" >&2
+            exit 1
+          fi
 
       - name: Build JNI wrapper for arm64-v8a
         run: |
